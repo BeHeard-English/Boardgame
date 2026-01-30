@@ -69,22 +69,61 @@
 
         /* Board */
         #board {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-            gap: 15px; width: 100%; max-width: 1200px; margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
         .tile {
-            aspect-ratio: 1/1; border-radius: 20px; border: 5px solid white;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 2.8rem; cursor: pointer; position: relative;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.1); transition: 0.3s;
+            aspect-ratio: 1/1; 
+            border-radius: 15px;
+            border: 4px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
         }
-        .tile:hover { transform: scale(1.05); }
+        .tile:hover { 
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
         .tile-vocab { background: var(--vocab-grad); }
         .tile-positive { background: var(--pos-grad); }
         .tile-negative { background: var(--neg-grad); }
-        .tile-start { background: #ffffff; color: #ff6b6b; font-size: 1.2rem; font-weight: bold; }
-        .tile-num { position: absolute; top: 5px; left: 10px; font-size: 0.9rem; opacity: 0.4; color: #000; }
+        .tile-start { 
+            background: #ffffff; 
+            color: #ff6b6b; 
+            font-size: 1.8rem; 
+            font-weight: bold;
+            border: 4px dashed #ff6b6b;
+        }
+        .tile-num { 
+            position: absolute; 
+            top: 8px; 
+            left: 8px; 
+            font-size: 0.9rem; 
+            font-weight: bold;
+            opacity: 0.7; 
+            color: #000;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
         .theme-select {
             padding: 10px 15px; border-radius: 50px; border: 2px solid var(--border-color);
@@ -103,6 +142,58 @@
         }
         .modal-text { font-size: 5rem; font-weight: bold; color: #222; margin-bottom: 20px; line-height: 1.2; }
         .modal-sub { font-size: 1.8rem; color: var(--text-main); margin-bottom: 10px; }
+
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            #board {
+                grid-template-columns: repeat(9, 1fr);
+                gap: 10px;
+                padding: 15px;
+            }
+            .tile {
+                font-size: 2.2rem;
+            }
+        }
+
+        @media (max-width: 900px) {
+            #board {
+                grid-template-columns: repeat(9, 1fr);
+                gap: 8px;
+                padding: 10px;
+            }
+            .tile {
+                font-size: 1.8rem;
+                border-width: 3px;
+            }
+            .tile-num {
+                width: 20px;
+                height: 20px;
+                font-size: 0.7rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #board {
+                grid-template-columns: repeat(9, 1fr);
+                gap: 6px;
+                padding: 8px;
+            }
+            .tile {
+                font-size: 1.6rem;
+                border-radius: 10px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            #board {
+                grid-template-columns: repeat(9, 1fr);
+                gap: 5px;
+                padding: 5px;
+            }
+            .tile {
+                font-size: 1.4rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -155,8 +246,9 @@
     <script>
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let vocabList = [];
-        let shuffledVocabList = []; // Danh sách từ vựng đã được xáo trộn
+        let shuffledVocabList = [];
         const TOTAL_TILES = 45;
+        const COLS = 9; // Số cột cố định
 
         const themes = {
             cute: { bg: '#fffaf0', container: '#ffffff', main: '#ff6b6b', border: '#ffd1dc', vocab: 'linear-gradient(135deg, #a1c4fd, #c2e9fb)', pos: 'linear-gradient(135deg, #b4a7d6, #d9d2e9)', neg: 'linear-gradient(135deg, #ff9a9e, #fecfef)', tileText: '#2c3e50' },
@@ -190,7 +282,6 @@
             osc.start(); osc.stop(now+0.4);
         }
 
-        // Hàm xáo trộn mảng (Fisher-Yates algorithm)
         function shuffleArray(array) {
             const newArray = [...array];
             for (let i = newArray.length - 1; i > 0; i--) {
@@ -207,7 +298,6 @@
                 vocabList = ["Enter vocabulary in setup page"];
             }
             
-            // Xáo trộn từ vựng ngay từ đầu
             shuffledVocabList = shuffleArray(vocabList);
             
             document.getElementById('setup-page').style.display = 'none';
@@ -215,11 +305,8 @@
             buildBoard();
         }
 
-        // Hàm xáo trộn và rebuild board
         function shuffleAndRebuildBoard() {
-            // Xáo trộn lại danh sách từ vựng
             shuffledVocabList = shuffleArray(vocabList);
-            // Xây dựng lại board
             buildBoard();
         }
 
@@ -232,22 +319,18 @@
             const maxAttempts = 1000;
             
             while (hasBadSequence && attempts < maxAttempts) {
-                // Trộn ngẫu nhiên
                 for (let i = shuffled.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
                 }
                 
-                // Kiểm tra: không có 2 ô cùng loại (pos/pos hoặc neg/neg) liên tiếp
                 hasBadSequence = false;
                 for (let i = 1; i < shuffled.length; i++) {
                     const current = shuffled[i];
                     const prev = shuffled[i-1];
                     
-                    // Chỉ kiểm tra positive và negative
                     if ((current === 'positive' || current === 'negative') && 
                         (prev === 'positive' || prev === 'negative')) {
-                        // Nếu cả hai đều là chức năng và cùng loại -> không hợp lệ
                         if (current === prev) {
                             hasBadSequence = true;
                             break;
@@ -258,8 +341,32 @@
                 attempts++;
             }
             
-            // Nếu sau nhiều lần vẫn không được, chấp nhận kết quả hiện tại
             return shuffled;
+        }
+
+        // Hàm tạo thứ tự hiển thị kiểu board game (snake pattern)
+        function createSnakeOrder(totalTiles, cols) {
+            const order = [];
+            const rows = Math.ceil(totalTiles / cols);
+            
+            for (let row = 0; row < rows; row++) {
+                const start = row * cols;
+                const end = Math.min(start + cols, totalTiles);
+                
+                if (row % 2 === 0) {
+                    // Hàng chẵn: từ trái sang phải
+                    for (let i = start; i < end; i++) {
+                        order.push(i);
+                    }
+                } else {
+                    // Hàng lẻ: từ phải sang trái
+                    for (let i = end - 1; i >= start; i--) {
+                        order.push(i);
+                    }
+                }
+            }
+            
+            return order;
         }
 
         function buildBoard() {
@@ -275,7 +382,7 @@
             const totalTiles = TOTAL_TILES;
             const tilesToCreate = totalTiles - 1;
             
-            // Đảm bảo có đủ từ vựng (nếu ít thì lặp lại)
+            // Đảm bảo có đủ từ vựng
             let vocabForBoard = [];
             
             // Tạo pool từ vựng đủ dùng từ danh sách đã xáo trộn
@@ -283,7 +390,7 @@
                 vocabForBoard = vocabForBoard.concat([...shuffledVocabList]);
             }
             
-            // Xáo trộn thêm một lần nữa để đảm bảo ngẫu nhiên
+            // Xáo trộn thêm một lần nữa
             vocabForBoard = shuffleArray(vocabForBoard);
             
             // 3. Tạo mảng phân phối ô
@@ -295,16 +402,13 @@
             }
             
             // Ô giữa (index 4-41): Phân phối ngẫu nhiên có kiểm soát
-            const middleCount = totalTiles - 1 - 6; // Trừ START và 6 ô vocab đầu/cuối
+            const middleCount = totalTiles - 1 - 6;
             
-            // Tỷ lệ: 40% chức năng (positive/negative), 60% vocab
             const funcCount = Math.floor(middleCount * 0.4);
             const vocabInMiddle = middleCount - funcCount;
             
-            // Tạo mảng cho phần giữa
             let middleTiles = [];
             
-            // Thêm ô chức năng
             const posCount = Math.floor(funcCount / 2);
             const negCount = funcCount - posCount;
             
@@ -312,7 +416,6 @@
             for (let i = 0; i < negCount; i++) middleTiles.push('negative');
             for (let i = 0; i < vocabInMiddle; i++) middleTiles.push('vocab');
             
-            // Trộn với ràng buộc
             middleTiles = shuffleWithConstraints(middleTiles);
             tileDistribution = tileDistribution.concat(middleTiles);
             
@@ -390,11 +493,15 @@
                 tiles.push(tileData);
             });
 
-            // 6. Hiển thị (START đã có ở vị trí 0)
-            tiles.forEach((data, i) => {
+            // 6. Tạo thứ tự hiển thị kiểu board game (snake pattern)
+            const displayOrder = createSnakeOrder(TOTAL_TILES, COLS);
+            
+            // 7. Hiển thị theo thứ tự snake pattern
+            displayOrder.forEach((tileIndex, displayIndex) => {
+                const data = tiles[tileIndex];
                 const el = document.createElement('div');
                 el.className = `tile tile-${data.type}`;
-                el.innerHTML = `<span class="tile-num">${i+1}</span>${data.icon}`;
+                el.innerHTML = `<span class="tile-num">${tileIndex + 1}</span>${data.icon}`;
                 
                 el.onclick = () => {
                     if(data.type !== 'start') {
