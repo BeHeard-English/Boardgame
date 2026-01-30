@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Adventure with Be Heard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Itim&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Default: Bright & Cute */
+            --bg-color: #fffaf0;
+            --container-bg: #ffffff;
+            --vocab-grad: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            --pos-grad: linear-gradient(135deg, #d9d2e9 0%, #b4a7d6 100%);
+            --neg-grad: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            --text-main: #ff6b6b;
+            --text-tile: #2c3e50;
+            --border-color: #ffd1dc;
+        }
+
+        body {
+            font-family: 'Itim', cursive;
+            background-color: var(--bg-color);
+            margin: 0; padding: 0;
+            transition: all 0.5s ease;
+        }
+
+        #setup-page, #game-page { display: flex; flex-direction: column; align-items: center; padding: 30px; box-sizing: border-box; min-height: 100vh; }
+        #game-page { display: none; }
+
+        .container {
+            background: var(--container-bg);
+            padding: 30px; border-radius: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            width: 90%; max-width: 700px; text-align: center;
+            border: 4px solid var(--border-color);
+        }
+
+        h1 { color: var(--text-main); font-size: 3rem; margin: 0 0 20px 0; }
+
+        textarea {
+            width: 100%; height: 180px; border: 3px solid var(--border-color);
+            border-radius: 20px; padding: 20px; font-family: 'Itim', cursive;
+            font-size: 1.2rem; margin-bottom: 20px; box-sizing: border-box; outline: none;
+        }
+
+        .controls-bar {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;
+            background: rgba(255,255,255,0.9); padding: 15px 25px;
+            border-radius: 100px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 25px;
+            position: sticky; top: 10px; z-index: 100;
+        }
+
+        button {
+            padding: 12px 28px; border: none; border-radius: 50px;
+            font-family: 'Itim', cursive; font-weight: bold; font-size: 1.1rem;
+            cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+        }
+
+        .btn-primary { background: #ff8e8e; color: white; }
+        .btn-dice { background: #4ecdc4; color: white; }
+        .btn-shuffle { background: #ffbe0b; color: white; }
+        .btn-back { background: #bdc3c7; color: white; }
+        
+        button:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        button:active { transform: translateY(2px); box-shadow: none; }
+
+        #dice-res { font-size: 3.5rem; font-weight: bold; color: #4ecdc4; margin-left: 15px; min-width: 50px; }
+
+        /* Board */
+        #board {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 15px; width: 100%; max-width: 1200px; margin-bottom: 30px;
+        }
+
+        .tile {
+            aspect-ratio: 1/1; border-radius: 20px; border: 5px solid white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.8rem; cursor: pointer; position: relative;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1); transition: 0.3s;
+        }
+        .tile:hover { transform: scale(1.05); }
+        .tile-vocab { background: var(--vocab-grad); }
+        .tile-positive { background: var(--pos-grad); }
+        .tile-negative { background: var(--neg-grad); }
+        .tile-start { background: #ffffff; color: #ff6b6b; font-size: 1.2rem; font-weight: bold; }
+        .tile-num { position: absolute; top: 5px; left: 10px; font-size: 0.9rem; opacity: 0.4; color: #000; }
+
+        .theme-select {
+            padding: 10px 15px; border-radius: 50px; border: 2px solid var(--border-color);
+            font-family: 'Itim', cursive; outline: none; cursor: pointer;
+        }
+
+        /* Modal */
+        #modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: none; justify-content: center;
+            align-items: center; z-index: 1000; backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: white; padding: 50px; border-radius: 40px; text-align: center;
+            width: 85%; max-width: 800px; border: 10px solid var(--border-color);
+        }
+        .modal-text { font-size: 5rem; font-weight: bold; color: #222; margin-bottom: 20px; line-height: 1.2; }
+        .modal-sub { font-size: 1.8rem; color: var(--text-main); margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="setup-page">
+        <h1>🍭 Let's play with Be Heard</h1>
+        <div class="container">
+            <p>Nhập từ vựng/câu hỏi bên dưới</p>
+            <textarea id="vocabInput" placeholder="Ví dụ:&#10;Apple&#10;Banana&#10;1. Cat&#10;- Dog"></textarea>
+            <div style="margin-bottom: 20px;">
+                🎵 Nhạc nền: <input type="file" id="bgMusic" accept="audio/*">
+            </div>
+            <button class="btn-primary" onclick="initGame()">🚀 Let's Start</button>
+        </div>
+    </div>
+
+    <div id="game-page">
+        <div class="controls-bar">
+            <div style="display: flex; align-items: center; border-right: 2px solid #ddd; padding-right: 20px;">
+                <button class="btn-dice" onclick="rollDice()">🎲 Roll the dice</button>
+                <div id="dice-res">?</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 0 10px;">
+                <span>Theme:</span>
+                <select class="theme-select" id="themeSelector" onchange="changeTheme(this.value)">
+                    <option value="cute">🌸 Cute</option>
+                    <option value="action">🔥 Action</option>
+                    <option value="nature">🌿 Fresh</option>
+                    <option value="space">🌌 Mystery</option>
+                    <option value="vibrant">⚡ Vivid</option>
+                </select>
+            </div>
+            <button class="btn-shuffle" onclick="shuffleAndRebuildBoard()">🔀 Shuffle</button>
+            <button class="btn-back" onclick="goBack()">⬅ Return</button>
+        </div>
+
+        <div id="board"></div>
+    </div>
+
+    <div id="modal-overlay" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div id="modal-sub" class="modal-sub">Dạng ô</div>
+            <div id="modal-text" class="modal-text">Nội dung</div>
+            <button class="btn-primary" style="font-size: 1.5rem;" onclick="closeModal()">Xong!</button>
+        </div>
+    </div>
+
+    <audio id="bgAudio" loop></audio>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let vocabList = [];
+        let shuffledVocabList = []; // Danh sách từ vựng đã được xáo trộn
+        const TOTAL_TILES = 45;
+
+        const themes = {
+            cute: { bg: '#fffaf0', container: '#ffffff', main: '#ff6b6b', border: '#ffd1dc', vocab: 'linear-gradient(135deg, #a1c4fd, #c2e9fb)', pos: 'linear-gradient(135deg, #b4a7d6, #d9d2e9)', neg: 'linear-gradient(135deg, #ff9a9e, #fecfef)', tileText: '#2c3e50' },
+            action: { bg: '#121212', container: '#1e1e1e', main: '#ff4757', border: '#333', vocab: 'linear-gradient(135deg, #cacfd9, #57606f)', pos: 'linear-gradient(135deg, #ff4757, #ff6b81)', neg: 'linear-gradient(135deg, #2f3542, #000)', tileText: '#fff' },
+            nature: { bg: '#f1f8e9', container: '#fff', main: '#2e7d32', border: '#a5d6a7', vocab: 'linear-gradient(135deg, #d4fc79, #96e6a1)', pos: 'linear-gradient(135deg, #f991ac, #f4cccc)', neg: 'linear-gradient(135deg, #f6d365, #fda085)', tileText: '#1b5e20' },
+            space: { bg: '#0b0e14', container: '#161b22', main: '#7d5fff', border: '#30363d', vocab: 'linear-gradient(135deg, #d9d2e9, #a1c4fd)', pos: 'linear-gradient(135deg, #00d2ff, #3a7bd5)', neg: 'linear-gradient(135deg, #6a11cb, #2575fc)', tileText: '#fff' },
+            vibrant: { bg: '#fff5e6', container: '#fff', main: '#f39c12', border: '#f1c40f', vocab: 'linear-gradient(135deg, #ff9a00, #ff5a00)', pos: 'linear-gradient(135deg, #fad02e, #f28c28)', neg: 'linear-gradient(135deg, #ff0055, #ff00aa)', tileText: '#fff' }
+        };
+
+        function changeTheme(key) {
+            const t = themes[key];
+            const root = document.documentElement;
+            root.style.setProperty('--bg-color', t.bg);
+            root.style.setProperty('--container-bg', t.container);
+            root.style.setProperty('--text-main', t.main);
+            root.style.setProperty('--border-color', t.border);
+            root.style.setProperty('--vocab-grad', t.vocab);
+            root.style.setProperty('--pos-grad', t.pos);
+            root.style.setProperty('--neg-grad', t.neg);
+            root.style.setProperty('--text-tile', t.tileText);
+        }
+
+        function playSound(type) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            if(type === 'positive') { osc.frequency.setValueAtTime(523, now); osc.frequency.exponentialRampToValueAtTime(1046, now+0.2); gain.gain.setValueAtTime(0.1, now); }
+            else if(type === 'negative') { osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(50, now+0.4); gain.gain.setValueAtTime(0.2, now); }
+            else { osc.frequency.setValueAtTime(440, now); gain.gain.setValueAtTime(0.05, now); }
+            osc.start(); osc.stop(now+0.4);
+        }
+
+        // Hàm xáo trộn mảng (Fisher-Yates algorithm)
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        function initGame() {
+            const input = document.getElementById('vocabInput').value;
+            vocabList = input.split('\n').map(l => l.replace(/^[0-9.\-\*•\s]+/, '').trim()).filter(l => l !== "");
+            if(vocabList.length === 0) {
+                vocabList = ["Enter vocabulary in setup page"];
+            }
+            
+            // Xáo trộn từ vựng ngay từ đầu
+            shuffledVocabList = shuffleArray(vocabList);
+            
+            document.getElementById('setup-page').style.display = 'none';
+            document.getElementById('game-page').style.display = 'flex';
+            buildBoard();
+        }
+
+        // Hàm xáo trộn và rebuild board
+        function shuffleAndRebuildBoard() {
+            // Xáo trộn lại danh sách từ vựng
+            shuffledVocabList = shuffleArray(vocabList);
+            // Xây dựng lại board
+            buildBoard();
+        }
+
+        function shuffleWithConstraints(arr) {
+            if (arr.length <= 1) return arr;
+            
+            let shuffled = [...arr];
+            let hasBadSequence = true;
+            let attempts = 0;
+            const maxAttempts = 1000;
+            
+            while (hasBadSequence && attempts < maxAttempts) {
+                // Trộn ngẫu nhiên
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                
+                // Kiểm tra: không có 2 ô cùng loại (pos/pos hoặc neg/neg) liên tiếp
+                hasBadSequence = false;
+                for (let i = 1; i < shuffled.length; i++) {
+                    const current = shuffled[i];
+                    const prev = shuffled[i-1];
+                    
+                    // Chỉ kiểm tra positive và negative
+                    if ((current === 'positive' || current === 'negative') && 
+                        (prev === 'positive' || prev === 'negative')) {
+                        // Nếu cả hai đều là chức năng và cùng loại -> không hợp lệ
+                        if (current === prev) {
+                            hasBadSequence = true;
+                            break;
+                        }
+                    }
+                }
+                
+                attempts++;
+            }
+            
+            // Nếu sau nhiều lần vẫn không được, chấp nhận kết quả hiện tại
+            return shuffled;
+        }
+
+        function buildBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = "";
+            let tiles = [];
+
+            // 1. Ô START cố định
+            const startTile = { type: 'start', content: 'START', icon: '🏁', sub: 'Let\'s Go!' };
+            tiles.push(startTile);
+
+            // 2. Tạo danh sách loại ô
+            const totalTiles = TOTAL_TILES;
+            const tilesToCreate = totalTiles - 1;
+            
+            // Đảm bảo có đủ từ vựng (nếu ít thì lặp lại)
+            let vocabForBoard = [];
+            
+            // Tạo pool từ vựng đủ dùng từ danh sách đã xáo trộn
+            while (vocabForBoard.length < tilesToCreate) {
+                vocabForBoard = vocabForBoard.concat([...shuffledVocabList]);
+            }
+            
+            // Xáo trộn thêm một lần nữa để đảm bảo ngẫu nhiên
+            vocabForBoard = shuffleArray(vocabForBoard);
+            
+            // 3. Tạo mảng phân phối ô
+            let tileDistribution = [];
+            
+            // Ô 2-4 (index 1-3): Luôn là vocab (3 ô đầu)
+            for (let i = 0; i < 3; i++) {
+                tileDistribution.push('vocab');
+            }
+            
+            // Ô giữa (index 4-41): Phân phối ngẫu nhiên có kiểm soát
+            const middleCount = totalTiles - 1 - 6; // Trừ START và 6 ô vocab đầu/cuối
+            
+            // Tỷ lệ: 40% chức năng (positive/negative), 60% vocab
+            const funcCount = Math.floor(middleCount * 0.4);
+            const vocabInMiddle = middleCount - funcCount;
+            
+            // Tạo mảng cho phần giữa
+            let middleTiles = [];
+            
+            // Thêm ô chức năng
+            const posCount = Math.floor(funcCount / 2);
+            const negCount = funcCount - posCount;
+            
+            for (let i = 0; i < posCount; i++) middleTiles.push('positive');
+            for (let i = 0; i < negCount; i++) middleTiles.push('negative');
+            for (let i = 0; i < vocabInMiddle; i++) middleTiles.push('vocab');
+            
+            // Trộn với ràng buộc
+            middleTiles = shuffleWithConstraints(middleTiles);
+            tileDistribution = tileDistribution.concat(middleTiles);
+            
+            // Ô cuối (3 ô vocab)
+            for (let i = 0; i < 3; i++) {
+                tileDistribution.push('vocab');
+            }
+            
+            // 4. Chuẩn bị icon và nội dung
+            const posIcons = ['🚀','⭐','🎁','🏆','🌈','💎','🔥','🍬'];
+            const negIcons = ['🐌','🌪️','🧊','👻','⛈️','🌧️','🧨','📉'];
+            
+            let vocabIndex = 0;
+            let lastPosValue = '';
+            let lastNegValue = '';
+            
+            // 5. Tạo nội dung cho từng ô dựa trên phân phối
+            tileDistribution.forEach((type) => {
+                let tileData;
+                
+                switch(type) {
+                    case 'vocab':
+                        tileData = {
+                            type: 'vocab',
+                            content: vocabForBoard[vocabIndex % vocabForBoard.length],
+                            icon: '',
+                            sub: "VOCABULARY"
+                        };
+                        vocabIndex++;
+                        break;
+                        
+                    case 'positive':
+                        let posContent;
+                        do {
+                            if (Math.random() > 0.5) {
+                                const steps = Math.min(rand(3) + 1, 4);
+                                posContent = `Forward ${steps} Steps`;
+                            } else {
+                                const points = Math.min(rand(2) + 1, 3);
+                                posContent = `+${points} Points`;
+                            }
+                        } while (posContent === lastPosValue);
+                        lastPosValue = posContent;
+                        
+                        tileData = {
+                            type: 'positive',
+                            content: posContent,
+                            icon: posIcons[rand(posIcons.length) - 1],
+                            sub: "LUCKY!"
+                        };
+                        break;
+                        
+                    case 'negative':
+                        let negContent;
+                        do {
+                            if (Math.random() > 0.5) {
+                                const steps = Math.min(rand(3), 3);
+                                negContent = `Back ${steps} Steps`;
+                            } else {
+                                const points = Math.min(rand(2) + 1, 3);
+                                negContent = `-${points} Points`;
+                            }
+                        } while (negContent === lastNegValue);
+                        lastNegValue = negContent;
+                        
+                        tileData = {
+                            type: 'negative',
+                            content: negContent,
+                            icon: negIcons[rand(negIcons.length) - 1],
+                            sub: "OH NO!"
+                        };
+                        break;
+                }
+                
+                tiles.push(tileData);
+            });
+
+            // 6. Hiển thị (START đã có ở vị trí 0)
+            tiles.forEach((data, i) => {
+                const el = document.createElement('div');
+                el.className = `tile tile-${data.type}`;
+                el.innerHTML = `<span class="tile-num">${i+1}</span>${data.icon}`;
+                
+                el.onclick = () => {
+                    if(data.type !== 'start') {
+                        playSound(data.type);
+                        document.getElementById('modal-text').innerText = data.content.toUpperCase();
+                        document.getElementById('modal-sub').innerText = data.sub;
+                        document.getElementById('modal-overlay').style.display = 'flex';
+                    }
+                };
+                board.appendChild(el);
+            });
+        }
+
+        function rand(m) { return Math.floor(Math.random() * m) + 1; }
+        
+        function closeModal() { 
+            document.getElementById('modal-overlay').style.display = 'none'; 
+        }
+        
+        function goBack() { 
+            document.getElementById('game-page').style.display = 'none'; 
+            document.getElementById('setup-page').style.display = 'flex'; 
+        }
+        
+        function rollDice() {
+            const res = document.getElementById('dice-res');
+            let c = 0; 
+            res.style.opacity = "0.5";
+            const t = setInterval(() => { 
+                res.innerText = rand(6); 
+                if(c++ > 12) {
+                    clearInterval(t);
+                    res.style.opacity = "1";
+                    res.innerText = rand(6);
+                } 
+            }, 60);
+        }
+
+        document.getElementById('bgMusic').onchange = (e) => {
+            const aud = document.getElementById('bgAudio');
+            aud.src = URL.createObjectURL(e.target.files[0]); aud.play();
+        };
+    </script>
+</body>
+</html>
